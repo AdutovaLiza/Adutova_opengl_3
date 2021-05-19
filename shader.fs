@@ -7,46 +7,84 @@ in VS_OUT {
     vec2 TexCoords;
 } fs_in;
 
+struct Material {
+    sampler2D diffuse;
+    sampler2D specular;
+    float shininess;
+}; 
+
+struct DirLight {
+    vec3 direction;
+    vec3 ambient;
+    vec3 specular;
+    vec3 color;
+};
+
+
 struct Light {
+    float constant;
+    float linear;
+    float quadratic;
+    vec3 ambient;
+    vec3 specular;
     vec3 Position;
     vec3 Color;
 };
 
+uniform Material material;
+uniform DirLight dirLight;
 uniform Light lights[4];
-uniform sampler2D texture1;
 uniform vec3 viewPos;
 
 void main()
 {           
-    vec3 color = texture(texture1, fs_in.TexCoords).rgb;
     vec3 normal = normalize(fs_in.Normal);
-	
-    // Фоновая составляющая
-    vec3 ambient = 0.05 * color;
-	
-    // Освещение
-    vec3 lighting = vec3(0.0);
     vec3 viewDir = normalize(viewPos - fs_in.FragPos);
-    
+
+    // Направленный источник
+    vec3 lightDir = normalize(-dirLight.direction);
+
+    // Диффузная составляющая
+    float diff = max(dot(normal, lightDir), 0.0);
+
+    // Отраженная составляющая
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+
+    // combine results
+
+    vec3 ambient = dirLight.ambient * vec3(texture(material.diffuse, fs_in.TexCoords)).rgb;
+    vec3 diffuse = dirLight.color * diff * vec3(texture(material.diffuse, fs_in.TexCoords)).rgb;
+    vec3 specular = dirLight.specular * spec * vec3(texture(material.specular, fs_in.TexCoords)).rgb;
+
+    vec3 result = (ambient + diffuse + specular) * 0.3;
+
+    // Точечные источники
     for(int i = 0; i < 4; i++)
     {
-        // Диффузная составляющая
         vec3 lightDir = normalize(lights[i].Position - fs_in.FragPos);
-        float diff = max(dot(lightDir, normal), 0.0);
-        vec3 result = lights[i].Color * diff * color;  
-		
+
+        // Диффузная составляющая
+        float diff = max(dot(normal, lightDir), 0.0);
+
         // Отраженная составляющая
         vec3 reflectDir = reflect(-lightDir, normal);
         vec3 halfwayDir = normalize(lightDir + viewDir);  
-        float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
-        vec3 specular = lights[i].Color * vec3(0.05) * spec;
-
-        // Затухание (используется квадратичное, так как у нас есть гамма-коррекция)
-        float distance = length(fs_in.FragPos - lights[i].Position);
-        result *= 1.0 / (distance * distance);
-        lighting = lighting + result + specular;
+        float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+        //float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
         
+        // Затухание
+        float distance = length(fs_in.FragPos - lights[i].Position);
+        float attenuation = 1.0 / (lights[i].constant + lights[i].linear * distance + lights[i].quadratic * (distance * distance));    
+
+        vec3 ambient = lights[i].ambient * vec3(texture(material.diffuse, fs_in.TexCoords)).rgb;
+        vec3 diffuse = lights[i].Color * diff * vec3(texture(material.diffuse, fs_in.TexCoords)).rgb;
+        vec3 specular = lights[i].specular * spec * vec3(texture(material.specular, fs_in.TexCoords)).rgb;
+
+        ambient *= attenuation;
+        diffuse *= attenuation;
+        specular *= attenuation;
+        result = result + (ambient + diffuse + specular) * 0.2;
      }
-     vec3 result = ambient + lighting;
      FragColor = vec4(result, 1.0);
 }

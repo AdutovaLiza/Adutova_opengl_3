@@ -281,7 +281,7 @@ int main()
     // Источники освещения
     // Координаты
     std::vector<glm::vec3> lightPositions;
-    lightPositions.push_back(glm::vec3(1.5f, 0.5f, 5.0f));
+    lightPositions.push_back(glm::vec3(1.5f, 1.5f, 5.0f));
     lightPositions.push_back(glm::vec3(3.0f, 1.0f, 1.5f));
     lightPositions.push_back(glm::vec3(1.5f, 3.5f, -1.5f));
     lightPositions.push_back(glm::vec3(5.0f, 10.0f, 0.0f));
@@ -296,7 +296,8 @@ int main()
 
    // Конфигурация шейдеров
     shader.use();
-    shader.setInt("texture1", 0);
+    shader.setInt("material.diffuse", 0);
+    shader.setInt("material.specular", 1);
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
@@ -363,24 +364,44 @@ int main()
         glClearColor(0.4f, 0.25f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+        
+        // be sure to activate shader when setting uniforms/drawing objects
+        shader.use();
+        shader.setVec3("viewPos", camera.Position);
+        shader.setFloat("material.shininess", 32.0f);
+
         // Отрисовываем сцену 
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
-        shader.use();
+
         shader.setMat4("projection", projection);
         shader.setMat4("view", view);
+        shader.setMat4("model", model);
+
+
+        // directional light
+        shader.setVec3("dirLight.direction", 0.0f, -5.0f, 0.0f);
+        shader.setVec3("dirLight.ambient", 0.6f, 0.6f, 0.6f);
+        shader.setVec3("dirLight.color", 1.0f, 1.0f, 1.0f);
+        shader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+       
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, grassTexture);
 
-        // Устанавливаем uniform-переменные освещения
+         //Устанавливаем uniform-переменные освещения
         for (unsigned int i = 0; i < lightPositions.size(); i++)
         {
             shader.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
             shader.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
+            shader.setVec3("lights[" + std::to_string(i) + "].ambient", 0.5f, 0.5f, 0.5f);
+            shader.setVec3("lights[" + std::to_string(i) + "].specular", 0.5f, 0.5f, 0.5f);
+            shader.setFloat("lights[" + std::to_string(i) + "].constant", 1.0f);
+            shader.setFloat("lights[" + std::to_string(i) + "].linear", 0.09);
+            shader.setFloat("lights[" + std::to_string(i) + "].quadratic", 0.032);
         }
-        shader.setVec3("viewPos", camera.Position);
-
+        //shader.setVec3("viewPos", camera.Position);
        
         // Фигуры
         // Сфера
