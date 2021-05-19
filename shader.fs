@@ -26,7 +26,6 @@ struct Light {
     float linear;
     float quadratic;
     vec3 ambient;
-    vec3 specular;
     vec3 Position;
     vec3 Color;
 };
@@ -68,19 +67,22 @@ void main()
         float diff = max(dot(normal, lightDir), 0.0);
 
         // Отраженная составляющая
-        vec3 reflectDir = reflect(-lightDir, normal);
         vec3 halfwayDir = normalize(lightDir + viewDir);  
         float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+        vec3 specular = lights[i].Color * spec * 0.5;
+        //vec3 reflectDir = reflect(-lightDir, normal);
+        //vec3 halfwayDir = normalize(lightDir + viewDir);  
+        //float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
         //float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-        
+        //vec3 specular = specularStrength * spec * lightColor; 
+
         // Затухание
         float distance = length(fs_in.FragPos - lights[i].Position);
         float attenuation = 1.0 / (lights[i].constant + lights[i].linear * distance + lights[i].quadratic * (distance * distance));    
 
         vec3 ambient = lights[i].ambient * vec3(texture(material.diffuse, fs_in.TexCoords)).rgb;
         vec3 diffuse = lights[i].Color * diff * vec3(texture(material.diffuse, fs_in.TexCoords)).rgb;
-        vec3 specular = lights[i].specular * spec * vec3(texture(material.specular, fs_in.TexCoords)).rgb;
-
+        
         ambient *= attenuation;
         diffuse *= attenuation;
         specular *= attenuation;

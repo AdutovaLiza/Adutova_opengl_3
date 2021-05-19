@@ -368,7 +368,7 @@ int main()
         // be sure to activate shader when setting uniforms/drawing objects
         shader.use();
         shader.setVec3("viewPos", camera.Position);
-        shader.setFloat("material.shininess", 32.0f);
+        shader.setFloat("material.shininess", 64.0f);
 
         // Отрисовываем сцену 
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -396,13 +396,13 @@ int main()
             shader.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
             shader.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
             shader.setVec3("lights[" + std::to_string(i) + "].ambient", 0.5f, 0.5f, 0.5f);
-            shader.setVec3("lights[" + std::to_string(i) + "].specular", 0.5f, 0.5f, 0.5f);
             shader.setFloat("lights[" + std::to_string(i) + "].constant", 1.0f);
             shader.setFloat("lights[" + std::to_string(i) + "].linear", 0.09);
             shader.setFloat("lights[" + std::to_string(i) + "].quadratic", 0.032);
         }
-        //shader.setVec3("viewPos", camera.Position);
-       
+        shader.setVec3("viewPos", camera.Position);
+
+
         // Фигуры
         // Сфера
         glBindTexture(GL_TEXTURE_2D, graniteTexture);
